@@ -1744,7 +1744,7 @@ export default function FormularioEventosUnificado() {
           <h4 className="mb-8 text-center text-xl font-bold text-[#70B643] md:text-2xl">
             {isLicencaMode
               ? "REQUERIMENTO DE LICENÇA DE LOCALIZAÇÃO E FUNCIONAMENTO"
-              : "FORMULÁRIO UNIFICADO DE EVENTOS - SEMFAZ"}
+              : "FORMULÁRIO UNIFICADO DE EVENTOS - SEMEC"}
           </h4>
 
           <p className="mb-6 text-sm leading-6 text-gray-700 md:text-base">
