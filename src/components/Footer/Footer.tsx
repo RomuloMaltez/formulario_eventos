@@ -274,7 +274,7 @@ export default function Footer() {
         aria-hidden="true"
         className="h-7 w-full bg-repeat-x sm:h-9"
         style={{
-          backgroundImage: "url('/semec/form-padrao/footer-banner.png')",
+          backgroundImage: "url('/footer-banner.png')",
           backgroundSize: "328px 48px",
           backgroundPosition: "left center",
         }}
