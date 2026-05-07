@@ -112,7 +112,8 @@ type FormState = {
 const PROCESSOS: Array<{ value: TipoProcesso; label: string }> = [
   {
     value: "requerimento_autorizacao_evento",
-    label: "Requerimento para Autorização de Evento",
+    label:
+      "Requerimento para Autorização de Evento / Licença para Localização Temporária",
   },
   { value: "comunicado_evento", label: "Comunicado de Evento" },
   {
@@ -387,6 +388,7 @@ function InputField({
   placeholder,
   readOnly = false,
   invalid = false,
+  required = false,
   className = "",
   inputClassName = "",
 }: {
@@ -400,6 +402,7 @@ function InputField({
   placeholder?: string;
   readOnly?: boolean;
   invalid?: boolean;
+  required?: boolean;
   className?: string;
   inputClassName?: string;
 }) {
@@ -412,6 +415,11 @@ function InputField({
         }`}
       >
         {label}
+        {required && (
+          <span aria-hidden="true" className="ml-0.5 text-red-500">
+            *
+          </span>
+        )}
       </label>
       <input
         id={id}
@@ -440,6 +448,7 @@ function TextAreaField({
   onChange,
   placeholder,
   invalid = false,
+  required = false,
   rows = 6,
 }: {
   id: string;
@@ -450,6 +459,7 @@ function TextAreaField({
   ) => void;
   placeholder?: string;
   invalid?: boolean;
+  required?: boolean;
   rows?: number;
 }) {
   return (
@@ -461,6 +471,11 @@ function TextAreaField({
         }`}
       >
         {label}
+        {required && (
+          <span aria-hidden="true" className="ml-0.5 text-red-500">
+            *
+          </span>
+        )}
       </label>
       <textarea
         id={id}
@@ -485,6 +500,7 @@ function SelectField({
   value,
   onChange,
   invalid = false,
+  required = false,
   children,
 }: {
   id: string;
@@ -492,6 +508,7 @@ function SelectField({
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   invalid?: boolean;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -503,6 +520,11 @@ function SelectField({
         }`}
       >
         {label}
+        {required && (
+          <span aria-hidden="true" className="ml-0.5 text-red-500">
+            *
+          </span>
+        )}
       </label>
       <select
         id={id}
@@ -527,12 +549,14 @@ function CheckField({
   label,
   onChange,
   invalid = false,
+  required = false,
 }: {
   id: string;
   checked: boolean;
   label: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   invalid?: boolean;
+  required?: boolean;
 }) {
   return (
     <label
@@ -549,7 +573,14 @@ function CheckField({
         onChange={onChange}
         className="mt-0.5 h-4 w-4 accent-[#70B643]"
       />
-      <span className="text-gray-700">{label}</span>
+      <span className="text-gray-700">
+        {label}
+        {required && (
+          <span aria-hidden="true" className="ml-0.5 text-red-500">
+            *
+          </span>
+        )}
+      </span>
     </label>
   );
 }
@@ -557,6 +588,8 @@ function CheckField({
 function processLabel(tipo: TipoProcesso) {
   return PROCESSOS.find((item) => item.value === tipo)?.label ?? "-";
 }
+
+const EMAIL_DESTINO = "plantao.eventos.dfit@gmail.com";
 
 function getDocumentosNecessarios(form: FormState) {
   const publico = parsePublico(form.publicoEstimado);
@@ -719,6 +752,8 @@ export default function FormularioEventosUnificado() {
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showSendNotice, setShowSendNotice] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
 
   const currentDate = useMemo(
     () => new Intl.DateTimeFormat("pt-BR").format(new Date()),
@@ -1447,7 +1482,7 @@ export default function FormularioEventosUnificado() {
       };
 
       const addSignatureBlock = (signatoryLabel: string, cpf: string) => {
-        const boxH = 46;
+        const boxH = 60;
 
         if (cursorY + boxH + BOX_GAP > BODY_MAX_Y) {
           newPage();
@@ -1489,6 +1524,24 @@ export default function FormularioEventosUnificado() {
         doc.text(`CPF nº ${safe(cpf)}`, PAGE_W / 2, lineY + 11, {
           align: "center",
         });
+
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...COLOR_MUTED);
+        doc.text(
+          "Aceita-se assinatura eletrônica. Para assinar pelo Gov.br, acesse:",
+          PAGE_W / 2,
+          lineY + 18,
+          { align: "center" },
+        );
+        doc.setTextColor(...COLOR_BLUE);
+        const govBrUrl = "https://www.gov.br/pt-br/servicos/assinatura-eletronica";
+        doc.textWithLink(govBrUrl, PAGE_W / 2, lineY + 22, {
+          align: "center",
+          url: govBrUrl,
+        });
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLOR_TEXT);
 
         cursorY = boxY + boxH + BOX_GAP;
       };
@@ -1595,7 +1648,7 @@ export default function FormularioEventosUnificado() {
           ["CEP:", form.cep],
         ]);
 
-        addBoxedFieldsSection("2. DADOS DO EVENTO", [
+        const dadosEventoFields: Array<[string, string]> = [
           ["Nome do evento:", form.nomeEvento],
           ["Local:", form.localEvento],
           ["Data(s):", form.datasEvento],
@@ -1605,7 +1658,16 @@ export default function FormularioEventosUnificado() {
           ["Porte:", form.porteEvento],
           ["Interdição de via:", form.interdicaoVia],
           ["Estrutura montada:", form.estruturaMontada],
-        ]);
+        ];
+
+        if (form.tipoProcesso === "requerimento_autorizacao_evento") {
+          dadosEventoFields.unshift([
+            "Modalidade:",
+            "Evento Temporário (Licença para Localização Temporária)",
+          ]);
+        }
+
+        addBoxedFieldsSection("2. DADOS DO EVENTO", dadosEventoFields);
 
         addBoxedParagraphSection(
           "3. DESCRIÇÃO E LOGÍSTICA",
@@ -1695,6 +1757,8 @@ export default function FormularioEventosUnificado() {
 
       const fileDate = new Date().toISOString().slice(0, 10);
       doc.save(`formulario-eventos-unificado-${fileDate}.pdf`);
+      setEmailCopied(false);
+      setShowSendNotice(true);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       alert("Não foi possível gerar o PDF. Tente novamente.");
@@ -1712,8 +1776,71 @@ export default function FormularioEventosUnificado() {
   const exibirEnquadramentoDispensa = form.tipoProcesso === "comunicado_evento";
   const exibirAceiteLimpeza = form.tipoProcesso === "termo_responsabilidade";
 
+  const requiresInscricaoMunRg =
+    form.tipoProcesso === "requerimento_autorizacao_evento" ||
+    form.tipoProcesso === "interdicao_via_carnaval";
+  const requiresPorteEvento =
+    requiresInscricaoMunRg || form.tipoProcesso === "comunicado_evento";
+  const requiresTrajeto = form.tipoProcesso === "interdicao_via_carnaval";
+
+  async function handleCopyEmail() {
+    try {
+      await navigator.clipboard.writeText(EMAIL_DESTINO);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2500);
+    } catch {
+      setEmailCopied(false);
+    }
+  }
+
   return (
     <>
+      {showSendNotice && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="send-notice-title"
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-2xl">
+            <h2
+              id="send-notice-title"
+              className="mb-2 text-lg font-bold text-[#1e3a5f]"
+            >
+              PDF gerado com sucesso
+            </h2>
+            <p className="mb-4 text-sm leading-6 text-gray-700">
+              O arquivo foi baixado para o seu computador. Envie-o em anexo,{" "}
+              <strong>
+                junto com toda a documentação necessária listada no formulário
+              </strong>
+              , para o e-mail do plantão de eventos:
+            </p>
+            <div className="mb-4 rounded-md border border-[#1e3a5f]/20 bg-[#f5f9ff] p-3 text-center">
+              <p className="break-all text-base font-semibold text-[#1e3a5f]">
+                {EMAIL_DESTINO}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                className="rounded-full border border-[#1e3a5f] px-5 py-2 text-sm font-bold text-[#1e3a5f] transition hover:bg-[#1e3a5f] hover:text-white"
+              >
+                {emailCopied ? "E-mail copiado!" : "Copiar e-mail"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSendNotice(false)}
+                className="rounded-full bg-[#70B643] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#5ea637]"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isGeneratingPdf && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80">
           <div className="text-center text-white">
@@ -1761,6 +1888,7 @@ export default function FormularioEventosUnificado() {
                 value={form.tipoProcesso}
                 onChange={handleSelectChange}
                 invalid={isInvalidField("tipoProcesso")}
+                required
               >
                 <option value="" disabled>
                   Selecione o processo
@@ -1848,6 +1976,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Razão social da pessoa jurídica"
                     invalid={isInvalidField("instituicaoPromotora")}
+                    required
                     className="md:col-span-2"
                   />
                   <InputField
@@ -1864,6 +1993,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="00.000.000/0000-00"
                     invalid={isInvalidField("cnpj")}
+                    required
                   />
                   <InputField
                     id="logradouro"
@@ -1872,6 +2002,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Rua, avenida, travessa..."
                     invalid={isInvalidField("logradouro")}
+                    required
                     className="md:col-span-2"
                   />
                   <InputField
@@ -1881,6 +2012,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Número"
                     invalid={isInvalidField("numero")}
+                    required
                   />
                   <InputField
                     id="complemento"
@@ -1896,6 +2028,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Bairro"
                     invalid={isInvalidField("bairro")}
+                    required
                   />
                   <InputField
                     id="municipioUf"
@@ -1904,6 +2037,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: Porto Velho/RO"
                     invalid={isInvalidField("municipioUf")}
+                    required
                   />
                   <InputField
                     id="cep"
@@ -1912,6 +2046,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="00000-000"
                     invalid={isInvalidField("cep")}
+                    required
                   />
                   <InputField
                     id="telefone"
@@ -1920,6 +2055,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="(00) 00000-0000"
                     invalid={isInvalidField("telefone")}
+                    required
                   />
                   <InputField
                     id="email"
@@ -1928,6 +2064,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="exemplo@email.com"
                     invalid={isInvalidField("email")}
+                    required
                   />
                   <InputField
                     id="referencia"
@@ -1948,6 +2085,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Nome completo"
                     invalid={isInvalidField("responsavelNome")}
+                    required
                     className="md:col-span-2"
                   />
                   <InputField
@@ -1964,6 +2102,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="000.000.000-00"
                     invalid={isInvalidField("responsavelCpf")}
+                    required
                   />
                   <InputField
                     id="telefoneResponsavel"
@@ -1972,6 +2111,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="(00) 00000-0000"
                     invalid={isInvalidField("telefoneResponsavel")}
+                    required
                   />
                   <InputField
                     id="emailResponsavel"
@@ -1980,6 +2120,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="responsavel@email.com"
                     invalid={isInvalidField("emailResponsavel")}
+                    required
                   />
                 </div>
               </SectionCard>
@@ -1992,6 +2133,7 @@ export default function FormularioEventosUnificado() {
                     value={form.tipoImovel}
                     onChange={handleSelectChange}
                     invalid={isInvalidField("tipoImovel")}
+                    required
                   >
                     <option value="">Selecione</option>
                     <option value="urbano">Urbano</option>
@@ -2004,6 +2146,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Informe o cadastro do imóvel"
                     invalid={isInvalidField("inscricaoImobiliaria")}
+                    required
                   />
                   <InputField
                     id="tipoEdificacao"
@@ -2012,6 +2155,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: galpão, loja, residência adaptada..."
                     invalid={isInvalidField("tipoEdificacao")}
+                    required
                   />
                   <InputField
                     id="setor"
@@ -2041,6 +2185,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="m²"
                     invalid={isInvalidField("areaUtilizada")}
+                    required
                   />
                   <InputField
                     id="areaEdificacao"
@@ -2049,6 +2194,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="m²"
                     invalid={isInvalidField("areaEdificacao")}
+                    required
                   />
                   <InputField
                     id="tipoPublicidade"
@@ -2064,6 +2210,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Descreva o tipo de publicidade"
                     invalid={isInvalidField("descricaoOutraPublicidade")}
+                    required={form.tipoPublicidade === "Outro"}
                   />
                   <InputField
                     id="metragemPublicidade"
@@ -2084,6 +2231,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 08:00"
                     invalid={isInvalidField("horarioInicio")}
+                    required
                   />
                   <InputField
                     id="horarioTermino"
@@ -2092,6 +2240,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 18:00"
                     invalid={isInvalidField("horarioTermino")}
+                    required
                   />
                   <InputField
                     id="tempoFuncionamento"
@@ -2106,6 +2255,7 @@ export default function FormularioEventosUnificado() {
                     value={form.tipoAtividade}
                     onChange={handleSelectChange}
                     invalid={isInvalidField("tipoAtividade")}
+                    required
                   >
                     <option value="">Selecione</option>
                     <option value="Industrial">Industrial</option>
@@ -2177,6 +2327,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Código CNAE"
                     invalid={isInvalidField("cnaePrincipal")}
+                    required
                   />
                   <InputField
                     id="descricaoPrincipal"
@@ -2185,6 +2336,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Descrição da atividade principal"
                     invalid={isInvalidField("descricaoPrincipal")}
+                    required
                   />
                   <div className="md:col-span-2">
                     <TextAreaField
@@ -2210,6 +2362,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Nome da instituição, empresa, entidade ou promotor"
                     invalid={isInvalidField("instituicaoPromotora")}
+                    required
                     className="md:col-span-2"
                   />
 
@@ -2220,6 +2373,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="00.000.000/0000-00"
                     invalid={isInvalidField("cnpj")}
+                    required
                   />
 
                   <InputField
@@ -2229,6 +2383,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Informe quando aplicável"
                     invalid={isInvalidField("inscricaoMunicipal")}
+                    required={requiresInscricaoMunRg}
                   />
 
                   <InputField
@@ -2238,6 +2393,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="(00) 00000-0000"
                     invalid={isInvalidField("telefone")}
+                    required
                   />
 
                   <InputField
@@ -2248,6 +2404,7 @@ export default function FormularioEventosUnificado() {
                     type="email"
                     placeholder="exemplo@email.com"
                     invalid={isInvalidField("email")}
+                    required
                   />
 
                   <InputField
@@ -2257,6 +2414,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Rua, avenida, travessa..."
                     invalid={isInvalidField("logradouro")}
+                    required
                     className="md:col-span-2"
                   />
 
@@ -2267,6 +2425,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Número"
                     invalid={isInvalidField("numero")}
+                    required
                   />
 
                   <InputField
@@ -2276,6 +2435,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Bairro"
                     invalid={isInvalidField("bairro")}
+                    required
                   />
 
                   <InputField
@@ -2306,6 +2466,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Digite o nome do evento"
                     invalid={isInvalidField("nomeEvento")}
+                    required
                     className="md:col-span-2"
                   />
 
@@ -2316,6 +2477,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Local completo"
                     invalid={isInvalidField("localEvento")}
+                    required
                     className="md:col-span-2"
                   />
 
@@ -2326,6 +2488,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 10/04/2026 ou 10 a 12/04/2026"
                     invalid={isInvalidField("datasEvento")}
+                    required
                   />
 
                   <InputField
@@ -2335,6 +2498,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 1500"
                     invalid={isInvalidField("publicoEstimado")}
+                    required
                   />
 
                   <InputField
@@ -2344,6 +2508,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 18:00"
                     invalid={isInvalidField("horarioInicio")}
+                    required
                   />
 
                   <InputField
@@ -2353,6 +2518,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Ex.: 23:59"
                     invalid={isInvalidField("horarioTermino")}
+                    required
                   />
 
                   <SelectField
@@ -2361,6 +2527,7 @@ export default function FormularioEventosUnificado() {
                     value={form.porteEvento}
                     onChange={handleSelectChange}
                     invalid={isInvalidField("porteEvento")}
+                    required={requiresPorteEvento}
                   >
                     <option value="">Selecione</option>
                     <option value="Pequeno">Pequeno</option>
@@ -2374,6 +2541,7 @@ export default function FormularioEventosUnificado() {
                     value={form.interdicaoVia}
                     onChange={handleSelectChange}
                     invalid={isInvalidField("interdicaoVia")}
+                    required={requiresPorteEvento}
                   >
                     <option value="">Selecione</option>
                     <option value="Sim">Sim</option>
@@ -2386,6 +2554,7 @@ export default function FormularioEventosUnificado() {
                     value={form.estruturaMontada}
                     onChange={handleSelectChange}
                     invalid={isInvalidField("estruturaMontada")}
+                    required={requiresPorteEvento}
                   >
                     <option value="">Selecione</option>
                     <option value="Sim">Sim</option>
@@ -2399,6 +2568,7 @@ export default function FormularioEventosUnificado() {
                       value={form.enquadramentoDispensa}
                       onChange={handleSelectChange}
                       invalid={isInvalidField("enquadramentoDispensa")}
+                      required
                     >
                       <option value="">Selecione</option>
                       <option value="estabelecimento_licenciado">
@@ -2457,6 +2627,7 @@ export default function FormularioEventosUnificado() {
                         onChange={handleChange}
                         placeholder="Descreva o circuito, trajeto ou trecho da via pública afetado"
                         invalid={isInvalidField("trajetoEvento")}
+                        required={requiresTrajeto}
                         rows={4}
                       />
                     </div>
@@ -2677,6 +2848,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Nome completo do responsável pelo evento"
                     invalid={isInvalidField("responsavelNome")}
+                    required
                     className="md:col-span-2"
                   />
 
@@ -2687,6 +2859,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="000.000.000-00"
                     invalid={isInvalidField("responsavelCpf")}
+                    required
                   />
 
                   <InputField
@@ -2696,6 +2869,7 @@ export default function FormularioEventosUnificado() {
                     onChange={handleChange}
                     placeholder="Documento de identidade"
                     invalid={isInvalidField("responsavelRg")}
+                    required={requiresInscricaoMunRg}
                   />
                 </div>
               </SectionCard>
@@ -2709,6 +2883,7 @@ export default function FormularioEventosUnificado() {
                 checked={form.aceiteDeclaracao}
                 onChange={handleCheckboxChange}
                 invalid={isInvalidField("aceiteDeclaracao")}
+                required
               />
 
               {exibirAceiteLimpeza && (
@@ -2718,6 +2893,7 @@ export default function FormularioEventosUnificado() {
                   checked={form.aceiteLimpezaConservacao}
                   onChange={handleCheckboxChange}
                   invalid={isInvalidField("aceiteLimpezaConservacao")}
+                  required
                 />
               )}
             </div>
@@ -2728,17 +2904,8 @@ export default function FormularioEventosUnificado() {
               <p className="mb-4 text-sm text-gray-700">
                 {isLicencaMode
                   ? "Assinatura do requerente"
-                  : "Responsável pelo evento"}{" "}
-                (inclusive assinatura eletrônica){" "}
-                <a
-                  href="https://www.gov.br/pt-br/servicos/assinatura-eletronica"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#26476f] underline"
-                >
-                  Clique aqui
-                </a>{" "}
-                para assinar pelo Gov.br, quando aplicável.
+                  : "Responsável pelo evento"}
+                .
               </p>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -2751,6 +2918,7 @@ export default function FormularioEventosUnificado() {
                   onChange={handleChange}
                   placeholder="000.000.000-00"
                   invalid={isInvalidField("responsavelCpf")}
+                  required
                 />
 
                 <InputField
@@ -2762,6 +2930,7 @@ export default function FormularioEventosUnificado() {
                   onChange={handleChange}
                   placeholder="Nome completo"
                   invalid={isInvalidField("responsavelNome")}
+                  required
                 />
               </div>
 
@@ -2773,6 +2942,22 @@ export default function FormularioEventosUnificado() {
 
           <div className="mb-4 space-y-1 text-center text-xs text-gray-500">
             <p>Documento gerado eletronicamente em {currentDate}</p>
+          </div>
+
+          <div className="mb-6 rounded-md border border-[#1e3a5f]/20 bg-[#f5f9ff] p-4 text-sm leading-6 text-gray-700">
+            <p className="mb-1 font-bold text-[#1e3a5f]">
+              Importante: envio ao plantão de eventos
+            </p>
+            <p>
+              Após gerar o PDF, envie-o em anexo,{" "}
+              <strong>
+                junto com toda a documentação necessária listada acima
+              </strong>
+              , para o e-mail:
+            </p>
+            <p className="mt-2 break-all font-semibold text-[#1e3a5f]">
+              {EMAIL_DESTINO}
+            </p>
           </div>
 
           <div className="pb-4 text-center">
