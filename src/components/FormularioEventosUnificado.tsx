@@ -8,8 +8,7 @@ type TipoProcesso =
   | "requerimento_autorizacao_evento"
   | "comunicado_evento"
   | "termo_responsabilidade"
-  | "interdicao_via_carnaval"
-  | "licenca_localizacao_funcionamento";
+  | "interdicao_via_carnaval";
 
 type PorteEvento = "" | "Pequeno" | "Médio" | "Grande";
 type SimNao = "" | "Sim" | "Não";
@@ -48,8 +47,6 @@ type FormState = {
   bairro: string;
   complemento: string;
   cep: string;
-  municipioUf: string;
-  referencia: string;
 
   nomeEvento: string;
   localEvento: string;
@@ -70,37 +67,6 @@ type FormState = {
   responsavelNome: string;
   responsavelCpf: string;
   responsavelRg: string;
-  telefoneResponsavel: string;
-  emailResponsavel: string;
-
-  tipoImovel: "" | "urbano" | "rural";
-  inscricaoImobiliaria: string;
-  tipoEdificacao: string;
-  setor: string;
-  quadra: string;
-  lote: string;
-  areaUtilizada: string;
-  areaEdificacao: string;
-  tipoPublicidade: string;
-  descricaoOutraPublicidade: string;
-  metragemPublicidade: string;
-  tempoFuncionamento: string;
-  tipoAtividade:
-    | ""
-    | "Industrial"
-    | "Comercial"
-    | "Prestação de Serviços"
-    | "Outros";
-  contadorNome: string;
-  contadorRg: string;
-  contadorCpf: string;
-  contadorCrc: string;
-  contadorTelefone: string;
-  contadorEmail: string;
-  cnaePrincipal: string;
-  descricaoPrincipal: string;
-  atividadesCorrelatas: string;
-  nomeFantasia: string;
 
   aceiteDeclaracao: boolean;
   aceiteLimpezaConservacao: boolean;
@@ -124,10 +90,6 @@ const PROCESSOS: Array<{ value: TipoProcesso; label: string }> = [
     value: "interdicao_via_carnaval",
     label: "Interdição de Via Pública / Carnaval",
   },
-  {
-    value: "licenca_localizacao_funcionamento",
-    label: "Cadastro de Licença de Localização e Funcionamento",
-  },
 ];
 
 const initialState: FormState = {
@@ -144,8 +106,6 @@ const initialState: FormState = {
   bairro: "",
   complemento: "",
   cep: "",
-  municipioUf: "",
-  referencia: "",
 
   nomeEvento: "",
   localEvento: "",
@@ -166,32 +126,6 @@ const initialState: FormState = {
   responsavelNome: "",
   responsavelCpf: "",
   responsavelRg: "",
-  telefoneResponsavel: "",
-  emailResponsavel: "",
-
-  tipoImovel: "",
-  inscricaoImobiliaria: "",
-  tipoEdificacao: "",
-  setor: "",
-  quadra: "",
-  lote: "",
-  areaUtilizada: "",
-  areaEdificacao: "",
-  tipoPublicidade: "",
-  descricaoOutraPublicidade: "",
-  metragemPublicidade: "",
-  tempoFuncionamento: "",
-  tipoAtividade: "",
-  contadorNome: "",
-  contadorRg: "",
-  contadorCpf: "",
-  contadorCrc: "",
-  contadorTelefone: "",
-  contadorEmail: "",
-  cnaePrincipal: "",
-  descricaoPrincipal: "",
-  atividadesCorrelatas: "",
-  nomeFantasia: "",
 
   aceiteDeclaracao: false,
   aceiteLimpezaConservacao: false,
@@ -719,20 +653,6 @@ function getDocumentosNecessarios(form: FormState) {
     );
   }
 
-  if (form.tipoProcesso === "licenca_localizacao_funcionamento") {
-    add(
-      "Requerimento padrão da SEMEC com indicação da(s) atividade(s) a ser(em) exercida(s).",
-      "Documento de comprovação de propriedade ou posse do imóvel, conforme a situação do estabelecimento.",
-      "Atos constitutivos, CNPJ e documentos pessoais do interessado ou procurador.",
-      "Certidão de Viabilidade de Uso e Ocupação do Solo expedida pela SEMUR.",
-      "Documento do Corpo de Bombeiros - CBMRO, quando aplicável.",
-      "Documento da Vigilância Sanitária - SEMUSA, quando aplicável.",
-      "Documento do Meio Ambiente - SEMA ou SEDAM, quando aplicável.",
-      "Declaração de autorização de diligência fiscal, quando houver atividade em imóvel residencial.",
-      "Comprovante de pagamento das taxas de abertura e vistoria.",
-    );
-  }
-
   if (form.estruturaMontada === "Sim") {
     add(
       "Detalhamento da estrutura montada: palco, barracas, geradores, arquibancadas ou similares.",
@@ -958,8 +878,6 @@ export default function FormularioEventosUnificado() {
     const fields: string[] = [];
     const emailRegex = /^\S+@\S+\.\S+$/;
     const publico = parsePublico(form.publicoEstimado);
-    const isLicencaMode =
-      form.tipoProcesso === "licenca_localizacao_funcionamento";
 
     function addFieldError(field: string, message: string) {
       errors.push(message);
@@ -975,112 +893,7 @@ export default function FormularioEventosUnificado() {
 
     required("tipoProcesso", "Tipo de processo");
 
-    if (isLicencaMode) {
-      required("instituicaoPromotora", "Razão social");
-      required("cnpj", "CNPJ");
-      required("logradouro", "Endereço");
-      required("numero", "Número");
-      required("bairro", "Bairro");
-      required("municipioUf", "Município / UF");
-      required("cep", "CEP");
-      required("telefone", "Telefone");
-      required("email", "E-mail");
-
-      required("responsavelNome", "Nome do responsável");
-      required("responsavelCpf", "CPF do responsável");
-      required("telefoneResponsavel", "Telefone do responsável");
-      required("emailResponsavel", "E-mail do responsável");
-
-      required("tipoImovel", "Tipo de imóvel");
-      required("inscricaoImobiliaria", "Inscrição Imobiliária / INCRA");
-      required("tipoEdificacao", "Tipo de edificação");
-      required("areaUtilizada", "Área utilizada");
-      required("areaEdificacao", "Área total da edificação");
-      required("horarioInicio", "Horário de início");
-      required("horarioTermino", "Horário de término");
-      required("tipoAtividade", "Tipo de atividade");
-      required("cnaePrincipal", "CNAE principal");
-      required("descricaoPrincipal", "Descrição principal");
-
-      if (
-        form.tipoPublicidade === "Outro" &&
-        !form.descricaoOutraPublicidade.trim()
-      ) {
-        addFieldError(
-          "descricaoOutraPublicidade",
-          'Descreva o tipo de publicidade quando selecionar "Outro".',
-        );
-      }
-
-      if (!form.aceiteDeclaracao) {
-        addFieldError(
-          "aceiteDeclaracao",
-          "Marque o aceite de veracidade das informações.",
-        );
-      }
-
-      if (form.email.trim() && !emailRegex.test(form.email.trim())) {
-        addFieldError("email", '"E-mail" não é um e-mail válido.');
-      }
-      if (
-        form.emailResponsavel.trim() &&
-        !emailRegex.test(form.emailResponsavel.trim())
-      ) {
-        addFieldError(
-          "emailResponsavel",
-          '"E-mail do responsável" não é válido.',
-        );
-      }
-      if (
-        form.contadorEmail.trim() &&
-        !emailRegex.test(form.contadorEmail.trim())
-      ) {
-        addFieldError("contadorEmail", '"E-mail do contador" não é válido.');
-      }
-
-      if (form.cnpj.trim() && !isValidCnpjLength(form.cnpj)) {
-        addFieldError("cnpj", '"CNPJ" deve conter 14 dígitos.');
-      }
-      if (form.telefone.trim() && !isValidPhoneBR(form.telefone)) {
-        addFieldError("telefone", '"Telefone" deve conter 10 ou 11 dígitos.');
-      }
-      if (
-        form.telefoneResponsavel.trim() &&
-        !isValidPhoneBR(form.telefoneResponsavel)
-      ) {
-        addFieldError(
-          "telefoneResponsavel",
-          '"Telefone do responsável" deve conter 10 ou 11 dígitos.',
-        );
-      }
-      if (
-        form.contadorTelefone.trim() &&
-        !isValidPhoneBR(form.contadorTelefone)
-      ) {
-        addFieldError(
-          "contadorTelefone",
-          '"Telefone do contador" deve conter 10 ou 11 dígitos.',
-        );
-      }
-      if (form.cep.trim() && !isValidCep(form.cep)) {
-        addFieldError("cep", '"CEP" deve conter 8 dígitos.');
-      }
-      if (
-        form.responsavelCpf.trim() &&
-        !isValidCpfLength(form.responsavelCpf)
-      ) {
-        addFieldError(
-          "responsavelCpf",
-          '"CPF do responsável" deve conter 11 dígitos.',
-        );
-      }
-      if (form.contadorCpf.trim() && !isValidCpfLength(form.contadorCpf)) {
-        addFieldError(
-          "contadorCpf",
-          '"CPF do contador" deve conter 11 dígitos.',
-        );
-      }
-    } else {
+    {
       required("instituicaoPromotora", "Instituição promotora");
       required("cnpj", "CNPJ");
       required("telefone", "Telefone");
@@ -1548,84 +1361,7 @@ export default function FormularioEventosUnificado() {
 
       drawPageBase();
 
-      if (form.tipoProcesso === "licenca_localizacao_funcionamento") {
-        addMainTitle(
-          "REQUERIMENTO DE LICENÇA DE LOCALIZAÇÃO",
-          "Pessoa Jurídica",
-        );
-        addBoxedFieldsSection("TIPO DE PROCESSO", [
-          ["Processo selecionado:", processLabel(form.tipoProcesso)],
-        ]);
-        addBoxedFieldsSection("1. DADOS DO ESTABELECIMENTO", [
-          ["Razão social:", form.instituicaoPromotora],
-          ["Nome fantasia:", form.nomeFantasia],
-          ["CNPJ:", form.cnpj],
-          ["Endereço:", form.logradouro],
-          ["Número:", form.numero],
-          ["Complemento:", form.complemento],
-          ["Bairro:", form.bairro],
-          ["Município / UF:", form.municipioUf],
-          ["CEP:", form.cep],
-          ["Telefone:", form.telefone],
-          ["E-mail:", form.email],
-          ["Ponto de referência:", form.referencia],
-        ]);
-        addBoxedFieldsSection("2. DADOS DO RESPONSÁVEL", [
-          ["Nome:", form.responsavelNome],
-          ["RG:", form.responsavelRg],
-          ["CPF:", form.responsavelCpf],
-          ["Telefone:", form.telefoneResponsavel],
-          ["E-mail:", form.emailResponsavel],
-        ]);
-        addBoxedFieldsSection("3. DADOS DO IMÓVEL", [
-          ["Tipo de imóvel:", form.tipoImovel],
-          ["Inscrição Imobiliária / INCRA:", form.inscricaoImobiliaria],
-          ["Tipo de edificação:", form.tipoEdificacao],
-          ["Setor:", form.setor],
-          ["Quadra:", form.quadra],
-          ["Lote:", form.lote],
-          ["Área utilizada:", form.areaUtilizada],
-          ["Área total da edificação:", form.areaEdificacao],
-          ["Tipo de publicidade:", form.tipoPublicidade],
-          ["Outra publicidade:", form.descricaoOutraPublicidade],
-          ["Metragem da publicidade:", form.metragemPublicidade],
-        ]);
-        addBoxedFieldsSection("4. OUTRAS INFORMAÇÕES", [
-          ["Horário de início:", form.horarioInicio],
-          ["Horário de término:", form.horarioTermino],
-          ["Tempo de funcionamento:", form.tempoFuncionamento],
-          ["Tipo de atividade:", form.tipoAtividade],
-        ]);
-        addBoxedFieldsSection("5. DADOS DO CONTADOR", [
-          ["Nome:", form.contadorNome],
-          ["RG:", form.contadorRg],
-          ["CPF:", form.contadorCpf],
-          ["CRC:", form.contadorCrc],
-          ["Telefone:", form.contadorTelefone],
-          ["E-mail:", form.contadorEmail],
-        ]);
-        addBoxedFieldsSection("6. ATIVIDADES", [
-          ["CNAE principal:", form.cnaePrincipal],
-          ["Descrição principal:", form.descricaoPrincipal],
-        ]);
-        if (form.atividadesCorrelatas.trim()) {
-          addBoxedParagraphSection(
-            "6.1 ATIVIDADES CORRELATAS",
-            form.atividadesCorrelatas,
-          );
-        }
-        addBulletListSection(
-          "7. DOCUMENTOS NECESSÁRIOS",
-          documentosNecessarios,
-        );
-        addBoxedFieldsSection("8. DECLARAÇÕES", [
-          [
-            "Aceite de veracidade das informações:",
-            form.aceiteDeclaracao ? "Sim" : "Não",
-          ],
-        ]);
-        addSignatureBlock("Sujeito passivo/Requerente", form.responsavelCpf);
-      } else {
+      {
         addMainTitle(
           "FORMULÁRIO UNIFICADO DE EVENTOS",
           processLabel(form.tipoProcesso),
@@ -1767,8 +1503,6 @@ export default function FormularioEventosUnificado() {
     }
   }
 
-  const isLicencaMode =
-    form.tipoProcesso === "licenca_localizacao_funcionamento";
   const exibirComercializacao =
     form.tipoProcesso === "requerimento_autorizacao_evento" ||
     form.tipoProcesso === "interdicao_via_carnaval";
@@ -1869,15 +1603,12 @@ export default function FormularioEventosUnificado() {
           )}
 
           <h4 className="mb-8 text-center text-xl font-bold text-[#70B643] md:text-2xl">
-            {isLicencaMode
-              ? "REQUERIMENTO DE LICENÇA DE LOCALIZAÇÃO E FUNCIONAMENTO"
-              : "FORMULÁRIO UNIFICADO DE EVENTOS - SEMEC"}
+            FORMULÁRIO UNIFICADO DE EVENTOS - SEMEC
           </h4>
 
           <p className="mb-6 text-sm leading-6 text-gray-700 md:text-base">
-            Preencha uma única vez os dados principais. A página alterna entre
-            os formulários de eventos e o requerimento de licença conforme o
-            processo escolhido no dropdown.
+            Preencha os dados principais do evento e selecione o tipo de
+            processo desejado.
           </p>
 
           <SectionCard title="TIPO DE PROCESSO">
@@ -1915,444 +1646,6 @@ export default function FormularioEventosUnificado() {
             </div>
           </SectionCard>
 
-          {isLicencaMode ? (
-            <>
-              <SectionCard title="ATENÇÃO PARA A DOCUMENTAÇÃO NECESSÁRIA">
-                <div className="space-y-3 p-4 text-sm text-gray-700">
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <p className="font-bold text-[#1e3a5f]">
-                      1. Requerimento padrão da SEMEC
-                    </p>
-                    <p className="mt-1">
-                      Este é o documento gerado ao clicar em "Gerar e Imprimir
-                      PDF".
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="font-bold text-[#1e3a5f]">
-                      2. Documento de comprovação de propriedade ou posse do
-                      imóvel
-                    </p>
-                    <p className="mt-1">
-                      Ex.: contrato de compra e venda, escritura, locação,
-                      cessão, BCI/IPTU, habite-se ou diligência fiscal, conforme
-                      o caso.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="font-bold text-[#1e3a5f]">
-                      3. Documentos pessoais do interessado ou procurador
-                    </p>
-                    <p className="mt-1">
-                      Atos constitutivos, CNPJ, RG/CPF e procuração, quando
-                      aplicável.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="font-bold text-[#1e3a5f]">
-                      4 a 9. Documentos complementares
-                    </p>
-                    <p className="mt-1">
-                      SEMUR, CBMRO, Vigilância Sanitária, Meio Ambiente,
-                      diligência fiscal e taxas de abertura/vistoria, conforme a
-                      atividade.
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
-                    Os itens relacionados a Bombeiros, Vigilância Sanitária e
-                    Meio Ambiente podem iniciar com protocolo de solicitação,
-                    mas a emissão final da licença dependerá da apresentação dos
-                    documentos definitivos.
-                  </div>
-                </div>
-              </SectionCard>
-
-              <SectionCard title="1. DADOS DO ESTABELECIMENTO">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <InputField
-                    id="instituicaoPromotora"
-                    label="Razão social"
-                    value={form.instituicaoPromotora}
-                    onChange={handleChange}
-                    placeholder="Razão social da pessoa jurídica"
-                    invalid={isInvalidField("instituicaoPromotora")}
-                    required
-                    className="md:col-span-2"
-                  />
-                  <InputField
-                    id="nomeFantasia"
-                    label="Nome fantasia"
-                    value={form.nomeFantasia}
-                    onChange={handleChange}
-                    placeholder="Nome fantasia, se houver"
-                  />
-                  <InputField
-                    id="cnpj"
-                    label="CNPJ"
-                    value={form.cnpj}
-                    onChange={handleChange}
-                    placeholder="00.000.000/0000-00"
-                    invalid={isInvalidField("cnpj")}
-                    required
-                  />
-                  <InputField
-                    id="logradouro"
-                    label="Endereço"
-                    value={form.logradouro}
-                    onChange={handleChange}
-                    placeholder="Rua, avenida, travessa..."
-                    invalid={isInvalidField("logradouro")}
-                    required
-                    className="md:col-span-2"
-                  />
-                  <InputField
-                    id="numero"
-                    label="Número"
-                    value={form.numero}
-                    onChange={handleChange}
-                    placeholder="Número"
-                    invalid={isInvalidField("numero")}
-                    required
-                  />
-                  <InputField
-                    id="complemento"
-                    label="Complemento"
-                    value={form.complemento}
-                    onChange={handleChange}
-                    placeholder="Sala, bloco, referência..."
-                  />
-                  <InputField
-                    id="bairro"
-                    label="Bairro"
-                    value={form.bairro}
-                    onChange={handleChange}
-                    placeholder="Bairro"
-                    invalid={isInvalidField("bairro")}
-                    required
-                  />
-                  <InputField
-                    id="municipioUf"
-                    label="Município / UF"
-                    value={form.municipioUf}
-                    onChange={handleChange}
-                    placeholder="Ex.: Porto Velho/RO"
-                    invalid={isInvalidField("municipioUf")}
-                    required
-                  />
-                  <InputField
-                    id="cep"
-                    label="CEP"
-                    value={form.cep}
-                    onChange={handleChange}
-                    placeholder="00000-000"
-                    invalid={isInvalidField("cep")}
-                    required
-                  />
-                  <InputField
-                    id="telefone"
-                    label="Telefone"
-                    value={form.telefone}
-                    onChange={handleChange}
-                    placeholder="(00) 00000-0000"
-                    invalid={isInvalidField("telefone")}
-                    required
-                  />
-                  <InputField
-                    id="email"
-                    label="E-mail"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="exemplo@email.com"
-                    invalid={isInvalidField("email")}
-                    required
-                  />
-                  <InputField
-                    id="referencia"
-                    label="Ponto de referência"
-                    value={form.referencia}
-                    onChange={handleChange}
-                    placeholder="Referência do local"
-                  />
-                </div>
-              </SectionCard>
-
-              <SectionCard title="2. DADOS DO RESPONSÁVEL">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <InputField
-                    id="responsavelNome"
-                    label="Nome do responsável"
-                    value={form.responsavelNome}
-                    onChange={handleChange}
-                    placeholder="Nome completo"
-                    invalid={isInvalidField("responsavelNome")}
-                    required
-                    className="md:col-span-2"
-                  />
-                  <InputField
-                    id="responsavelRg"
-                    label="RG"
-                    value={form.responsavelRg}
-                    onChange={handleChange}
-                    placeholder="Documento de identidade"
-                  />
-                  <InputField
-                    id="responsavelCpf"
-                    label="CPF"
-                    value={form.responsavelCpf}
-                    onChange={handleChange}
-                    placeholder="000.000.000-00"
-                    invalid={isInvalidField("responsavelCpf")}
-                    required
-                  />
-                  <InputField
-                    id="telefoneResponsavel"
-                    label="Telefone do responsável"
-                    value={form.telefoneResponsavel}
-                    onChange={handleChange}
-                    placeholder="(00) 00000-0000"
-                    invalid={isInvalidField("telefoneResponsavel")}
-                    required
-                  />
-                  <InputField
-                    id="emailResponsavel"
-                    label="E-mail do responsável"
-                    value={form.emailResponsavel}
-                    onChange={handleChange}
-                    placeholder="responsavel@email.com"
-                    invalid={isInvalidField("emailResponsavel")}
-                    required
-                  />
-                </div>
-              </SectionCard>
-
-              <SectionCard title="3. DADOS DO IMÓVEL">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <SelectField
-                    id="tipoImovel"
-                    label="Tipo de imóvel"
-                    value={form.tipoImovel}
-                    onChange={handleSelectChange}
-                    invalid={isInvalidField("tipoImovel")}
-                    required
-                  >
-                    <option value="">Selecione</option>
-                    <option value="urbano">Urbano</option>
-                    <option value="rural">Rural</option>
-                  </SelectField>
-                  <InputField
-                    id="inscricaoImobiliaria"
-                    label="Inscrição Imobiliária / INCRA"
-                    value={form.inscricaoImobiliaria}
-                    onChange={handleChange}
-                    placeholder="Informe o cadastro do imóvel"
-                    invalid={isInvalidField("inscricaoImobiliaria")}
-                    required
-                  />
-                  <InputField
-                    id="tipoEdificacao"
-                    label="Tipo de edificação"
-                    value={form.tipoEdificacao}
-                    onChange={handleChange}
-                    placeholder="Ex.: galpão, loja, residência adaptada..."
-                    invalid={isInvalidField("tipoEdificacao")}
-                    required
-                  />
-                  <InputField
-                    id="setor"
-                    label="Setor"
-                    value={form.setor}
-                    onChange={handleChange}
-                    placeholder="Opcional"
-                  />
-                  <InputField
-                    id="quadra"
-                    label="Quadra"
-                    value={form.quadra}
-                    onChange={handleChange}
-                    placeholder="Opcional"
-                  />
-                  <InputField
-                    id="lote"
-                    label="Lote"
-                    value={form.lote}
-                    onChange={handleChange}
-                    placeholder="Opcional"
-                  />
-                  <InputField
-                    id="areaUtilizada"
-                    label="Área utilizada"
-                    value={form.areaUtilizada}
-                    onChange={handleChange}
-                    placeholder="m²"
-                    invalid={isInvalidField("areaUtilizada")}
-                    required
-                  />
-                  <InputField
-                    id="areaEdificacao"
-                    label="Área total da edificação"
-                    value={form.areaEdificacao}
-                    onChange={handleChange}
-                    placeholder="m²"
-                    invalid={isInvalidField("areaEdificacao")}
-                    required
-                  />
-                  <InputField
-                    id="tipoPublicidade"
-                    label="Tipo de publicidade"
-                    value={form.tipoPublicidade}
-                    onChange={handleChange}
-                    placeholder="Ex.: fachada, painel, adesivo, Outro"
-                  />
-                  <InputField
-                    id="descricaoOutraPublicidade"
-                    label='Descrição da publicidade quando for "Outro"'
-                    value={form.descricaoOutraPublicidade}
-                    onChange={handleChange}
-                    placeholder="Descreva o tipo de publicidade"
-                    invalid={isInvalidField("descricaoOutraPublicidade")}
-                    required={form.tipoPublicidade === "Outro"}
-                  />
-                  <InputField
-                    id="metragemPublicidade"
-                    label="Metragem da publicidade"
-                    value={form.metragemPublicidade}
-                    onChange={handleChange}
-                    placeholder="m²"
-                  />
-                </div>
-              </SectionCard>
-
-              <SectionCard title="4. OUTRAS INFORMAÇÕES">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <InputField
-                    id="horarioInicio"
-                    label="Horário de início"
-                    value={form.horarioInicio}
-                    onChange={handleChange}
-                    placeholder="Ex.: 08:00"
-                    invalid={isInvalidField("horarioInicio")}
-                    required
-                  />
-                  <InputField
-                    id="horarioTermino"
-                    label="Horário de término"
-                    value={form.horarioTermino}
-                    onChange={handleChange}
-                    placeholder="Ex.: 18:00"
-                    invalid={isInvalidField("horarioTermino")}
-                    required
-                  />
-                  <InputField
-                    id="tempoFuncionamento"
-                    label="Tempo de funcionamento"
-                    value={form.tempoFuncionamento}
-                    onChange={handleChange}
-                    placeholder="Ex.: segunda a sábado"
-                  />
-                  <SelectField
-                    id="tipoAtividade"
-                    label="Tipo de atividade"
-                    value={form.tipoAtividade}
-                    onChange={handleSelectChange}
-                    invalid={isInvalidField("tipoAtividade")}
-                    required
-                  >
-                    <option value="">Selecione</option>
-                    <option value="Industrial">Industrial</option>
-                    <option value="Comercial">Comercial</option>
-                    <option value="Prestação de Serviços">
-                      Prestação de Serviços
-                    </option>
-                    <option value="Outros">Outros</option>
-                  </SelectField>
-                </div>
-              </SectionCard>
-
-              <SectionCard title="5. DADOS DO CONTADOR">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <InputField
-                    id="contadorNome"
-                    label="Nome do contador"
-                    value={form.contadorNome}
-                    onChange={handleChange}
-                    placeholder="Opcional"
-                  />
-                  <InputField
-                    id="contadorRg"
-                    label="RG do contador"
-                    value={form.contadorRg}
-                    onChange={handleChange}
-                    placeholder="Opcional"
-                  />
-                  <InputField
-                    id="contadorCpf"
-                    label="CPF do contador"
-                    value={form.contadorCpf}
-                    onChange={handleChange}
-                    placeholder="000.000.000-00"
-                    invalid={isInvalidField("contadorCpf")}
-                  />
-                  <InputField
-                    id="contadorCrc"
-                    label="CRC"
-                    value={form.contadorCrc}
-                    onChange={handleChange}
-                    placeholder="Registro profissional"
-                  />
-                  <InputField
-                    id="contadorTelefone"
-                    label="Telefone do contador"
-                    value={form.contadorTelefone}
-                    onChange={handleChange}
-                    placeholder="(00) 00000-0000"
-                    invalid={isInvalidField("contadorTelefone")}
-                  />
-                  <InputField
-                    id="contadorEmail"
-                    label="E-mail do contador"
-                    value={form.contadorEmail}
-                    onChange={handleChange}
-                    placeholder="contador@email.com"
-                    invalid={isInvalidField("contadorEmail")}
-                  />
-                </div>
-              </SectionCard>
-
-              <SectionCard title="6. ATIVIDADES">
-                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                  <InputField
-                    id="cnaePrincipal"
-                    label="CNAE principal"
-                    value={form.cnaePrincipal}
-                    onChange={handleChange}
-                    placeholder="Código CNAE"
-                    invalid={isInvalidField("cnaePrincipal")}
-                    required
-                  />
-                  <InputField
-                    id="descricaoPrincipal"
-                    label="Descrição principal"
-                    value={form.descricaoPrincipal}
-                    onChange={handleChange}
-                    placeholder="Descrição da atividade principal"
-                    invalid={isInvalidField("descricaoPrincipal")}
-                    required
-                  />
-                  <div className="md:col-span-2">
-                    <TextAreaField
-                      id="atividadesCorrelatas"
-                      label="Atividades correlatas"
-                      value={form.atividadesCorrelatas}
-                      onChange={handleChange}
-                      placeholder="Informe as atividades correlatas, uma por linha, no formato: CNAE - descrição"
-                      rows={5}
-                    />
-                  </div>
-                </div>
-              </SectionCard>
-            </>
-          ) : (
-            <>
               <SectionCard title="1. DADOS DO PROMOTOR DO EVENTO">
                 <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
                   <InputField
@@ -2873,8 +2166,6 @@ export default function FormularioEventosUnificado() {
                   />
                 </div>
               </SectionCard>
-            </>
-          )}
           <SectionCard title="7. DECLARAÇÕES E RESPONSABILIDADES" muted>
             <div className="space-y-4 p-4">
               <CheckField
@@ -2902,18 +2193,13 @@ export default function FormularioEventosUnificado() {
           <SectionCard title="ASSINATURA" muted>
             <div className="p-4">
               <p className="mb-4 text-sm text-gray-700">
-                {isLicencaMode
-                  ? "Assinatura do requerente"
-                  : "Responsável pelo evento"}
-                .
+                Responsável pelo evento.
               </p>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <InputField
                   id="responsavelCpf"
-                  label={
-                    isLicencaMode ? "CPF do requerente" : "CPF do responsável"
-                  }
+                  label="CPF do responsável"
                   value={form.responsavelCpf}
                   onChange={handleChange}
                   placeholder="000.000.000-00"
@@ -2923,9 +2209,7 @@ export default function FormularioEventosUnificado() {
 
                 <InputField
                   id="responsavelNome"
-                  label={
-                    isLicencaMode ? "Nome do requerente" : "Nome do responsável"
-                  }
+                  label="Nome do responsável"
                   value={form.responsavelNome}
                   onChange={handleChange}
                   placeholder="Nome completo"
